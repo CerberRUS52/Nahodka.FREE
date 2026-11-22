@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Находка — объявления рядом</title>
+  <style>
+    :root {
+      --ink: #202124;
+      --muted: #70757a;
+      --line: #e8eaed;
+      --blue: #2864dc;
+      --blue-hover: #1f53bb;
+      --surface: #fff;
+      --page: #f7f8fa;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255,255,255,.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar-inner, .container {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 26px;
+    }
+
+    .brand {
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      white-space: nowrap;
+    }
+
+    .brand span { color: var(--blue); }
+
+    .location {
+      border: 0;
+      background: transparent;
+      color: #45484d;
+      padding: 8px 0;
+      white-space: nowrap;
+    }
+
+    .search {
+      flex: 1;
+      display: flex;
+      min-width: 180px;
+      height: 44px;
+      border: 1px solid #d9dce1;
+      border-radius: 11px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .search input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      padding: 0 14px;
+    }
+
+    .search button {
+      border: 0;
+      padding: 0 20px;
+      color: white;
+      background: var(--blue);
+      font-weight: 650;
+    }
+
+    .search button:hover, .primary:hover { background: var(--blue-hover); }
+
+    .header-action {
+      border: 0;
+      background: transparent;
+      color: #3c4043;
+      white-space: nowrap;
+      padding: 8px 0;
+    }
+
+    .primary {
+      border: 0;
+      border-radius: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 650;
+      padding: 11px 16px;
+      white-space: nowrap;
+    }
+
+    main { padding: 32px 0 60px; }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.1;
+      letter-spacing: -1.4px;
+    }
+
+    .subtitle { margin: 0; color: var(--muted); }
+
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin: 24px 0 32px;
+    }
+
+    .category {
+      min-height: 92px;
+      padding: 15px;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      color: var(--ink);
+      transition: .15s ease;
+    }
+
+    .category:hover, .category.active {
+      border-color: #a9c2f5;
+      box-shadow: 0 4px 16px #1b4d9910;
+      transform: translateY(-1px);
+    }
+
+    .category.active { background: #f1f6ff; }
+    .category .icon { display: block; font-size: 23px; margin-bottom: 7px; }
+    .category .label { font-weight: 650; }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 0 0 16px;
+    }
+
+    h2 { margin: 0; font-size: 23px; letter-spacing: -.5px; }
+
+    .sort {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 9px 12px;
+      background: white;
+      color: #42464b;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 235px 1fr;
+      align-items: start;
+      gap: 22px;
+    }
+
+    .filters {
+      padding: 18px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      height: fit-content;
+    }
+
+    .filters h3 { margin: 0 0 17px; font-size: 17px; }
+    .field { margin-bottom: 17px; }
+    .field label { display: block; margin-bottom: 7px; color: #555a60; font-size: 13px; }
+    .field input, .field select {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid #dfe2e7;
+      border-radius: 9px;
+      background: #fff;
+      outline-color: #9bb8f2;
+    }
+
+    .price-row { display: flex; gap: 8px; }
+    .check { display: flex; align-items: center; gap: 8px; color: #555a60; }
+    .check input { accent-color: var(--blue); }
+
+    .reset {
+      width: 100%;
+      border: 1px solid #dfe2e7;
+      border-radius: 9px;
+      padding: 10px;
+      background: white;
+      color: #45484d;
+    }
+
+    .reset:hover { background: #f8f9fa; }
+
+    .listings {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      transition: .18s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px #1b263510;
+    }
+
+    .photo-wrap { position: relative; aspect-ratio: 1.28 / 1; background: #e9edf2; }
+    .photo {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .favorite {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 50%;
+      background: #ffffffed;
+      color: #59616b;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: .15s ease;
+    }
+
+    .favorite:hover { background: #fff; transform: scale(1.1); }
+    .favorite.selected { color: #e64a68; }
+    
+    .card-content { padding: 13px 14px 15px; }
+    .card-title { min-height: 42px; margin: 0 0 8px; font-size: 15px; font-weight: 600; line-height: 1.3; }
+    .price { margin-bottom: 8px; font-size: 20px; font-weight: 750; letter-spacing: -.3px; }
+    .meta { color: var(--muted); font-size: 12px; }
+
+    .empty {
+      grid-column: 1 / -1;
+      padding: 38px 20px;
+      border: 1px dashed #cbd1da;
+      border-radius: var(--radius);
+      color: var(--muted);
+      text-align: center;
+      background: white;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #11182777;
+      backdrop-filter: blur(4px);
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      width: min(480px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      padding: 24px;
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 18px 60px #0003;
+    }
+
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-head h2 { font-size: 22px; margin: 0; }
+    .close {
+      border: 0;
+      background: transparent;
+      color: #60656c;
+      font-size: 25px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .close:hover { background: #f1f3f4; }
+
+    .modal .field input, .modal .field select { min-height: 44px; }
+    .modal .primary { width: 100%; margin-top: 4px; }
+
+    @media (max-width: 950px) {
+      .categories { grid-template-columns: repeat(3, 1fr); }
+      .listings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .location { display: none; }
+    }
+
+    @media (max-width: 650px) {
+      .topbar-inner, .container { width: min(100% - 28px, 1180px); }
+      .topbar-inner { min-height: 62px; gap: 13px; flex-wrap: wrap; padding: 10px 0; }
+      .brand { font-size: 21px; }
+      .header-action { display: none; }
+      .topbar .primary { padding: 9px 11px; font-size: 13px; }
+      .search { order: 2; flex-basis: 100%; height: 42px; }
+      main { padding-top: 24px; }
+      .hero { align-items: flex-start; }
+      .hero .primary { display: none; }
+      .categories { gap: 8px; margin: 20px 0 26px; }
+      .category { min-height: 78px; padding: 11px; font-size: 13px; }
+      .category .icon { font-size: 20px; }
+      .layout { grid-template-columns: 1fr; }
+      .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+      .filters h3, .filters .check, .filters .reset { grid-column: 1 / -1; }
+      .listings { gap: 10px; grid-template-columns: 1fr; }
+      .card-content { padding: 10px; }
+      .card-title { font-size: 13px; min-height: 38px; }
+      .price { font-size: 17px; }
+      .meta { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#" aria-label="Находка — главная">наход<span>ка</span></a>
+      <button class="location" type="button">⌖ Москва</button>
+
+      <form class="search" id="searchForm">
+        <input id="searchInput" type="search" placeholder="Найти объявление" aria-label="Поиск объявлений" />
+        <button type="submit">Найти</button>
+      </form>
+
+      <button class="header-action" id="favoritesFilter" type="button">♡ Избранное</button>
+      <button class="primary" id="openModal" type="button">＋ Разместить объявление</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div>
+        <h1>Находите нужное рядом</h1>
+        <p class="subtitle">Покупайте, продавайте и находите услуги в вашем городе</p>
+      </div>
+      <button class="primary" type="button" onclick="openListingModal()">＋ Разместить объявление</button>
+    </section>
+
+    <section class="categories" aria-label="Категории">
+      <button class="category active" data-category="Все объявления"><span class="icon">✨</span><span class="label">Все объявления</span></button>
+      <button class="category" data-category="Транспорт"><span class="icon">🚗</span><span class="label">Транспорт</span></button>
+      <button class="category" data-category="Недвижимость"><span class="icon">🏠</span><span class="label">Недвижимость</span></button>
+      <button class="category" data-category="Электроника"><span class="icon">📱</span><span class="label">Электроника</span></button>
+      <button class="category" data-category="Дом и сад"><span class="icon">🪴</span><span class="label">Дом и сад</span></button>
+      <button class="category" data-category="Услуги"><span class="icon">🛠️</span><span class="label">Услуги</span></button>
+    </section>
+
+    <div class="section-head">
+      <h2 id="resultsTitle">Свежие объявления</h2>
+      <select class="sort" id="sortSelect" aria-label="Сортировка">
+        <option value="default">Сначала рекомендуемые</option>
+        <option value="cheap">Сначала дешевле</option>
+        <option value="expensive">Сначала дороже</option>
+      </select>
+    </div>
+
+    <div class="layout">
+      <aside class="filters">
+        <h3>Фильтры</h3>
+        <div class="field">
+          <label for="categoryFilter">Категория</label>
+          <select id="categoryFilter">
+            <option value="Все объявления">Все категории</option>
+            <option>Транспорт</option>
+            <option>Недвижимость</option>
+            <option>Электроника</option>
+            <option>Дом и сад</option>
+            <option>Услуги</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Цена, ₽</label>
+          <div class="price-row">
+            <input id="minPrice" type="number" placeholder="От" min="0" />
+            <input id="maxPrice" type="number" placeholder="До" min="0" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="cityFilter">Город</label>
+          <input id="cityFilter" value="Москва" />
+        </div>
+        <label class="check"><input id="onlyPhoto" type="checkbox" /> Только с фото</label>
+        <button class="reset" id="resetFilters" type="button">Сбросить фильтры</button>
+      </aside>
+
+      <section class="listings" id="listings" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <div class="overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <form class="modal" id="listingForm">
+      <div class="modal-head">
+        <h2 id="modalTitle">Новое объявление</h2>
+        <button class="close" id="closeModal" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="field">
+        <label for="newTitle">Название</label>
+        <input id="newTitle" required maxlength="80" placeholder="Например, велосипед в хорошем состоянии" />
+      </div>
+      <div class="field">
+        <label for="newCategory">Категория</label>
+        <select id="newCategory" required>
+          <option>Транспорт</option><option>Недвижимость</option><option>Электроника</option>
+          <option>Дом и сад</option><option>Услуги</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="newPrice">Цена, ₽</label>
+        <input id="newPrice" type="number" min="0" required placeholder="0" />
+      </div>
+      <div class="field">
+        <label for="newCity">Город</label>
+        <input id="newCity" required value="Москва" />
+      </div>
+      <button class="primary" type="submit">Опубликовать</button>
+    </form>
+  </div>
+
+  <script>
+    const products = [
+      {
+        id: 1, title: "Городской велосипед, отличное состояние", price: 18500,
+        category: "Транспорт", city: "Москва", date: "Сегодня, 10:42",
+        image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 2, title: "Уютная студия рядом с метро", price: 72000,
+        category: "Недвижимость", city: "Москва", date: "Сегодня, 09:18",
+        image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 3, title: "Наушники с шумоподавлением", price: 8900,
+        category: "Электроника", city: "Москва", date: "Вчера, 19:35",
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 4, title: "Кресло для рабочего кабинета", price: 6400,
+        category: "Дом и сад", city: "Москва", date: "Вчера, 16:07",
+        image: "https://images.unsplash.com/photo-1505843490701-5be5d1b9c3c4?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 5, title: "Ремонт стиральных машин — выезд сегодня", price: 1500,
+        category: "Услуги", city: "Москва", date: "Вчера, 12:20",
+        image: "https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 6, title: "Смартфон, хорошая камера, полный комплект", price: 24900,
+        category: "Электроника", city: "Москва", date: "Пн, 14:10",
+        image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80"
+      }
+    ];
+
+    const favorites = new Set();
+    let favoritesOnly = false;
+
+    const listings = document.querySelector("#listings");
+    const searchInput = document.querySelector("#searchInput");
+
+    function render() {
+      const query = searchInput.value.trim().toLowerCase();
+      const category = document.querySelector("#categoryFilter").value;
+      const min = Number(document.querySelector("#minPrice").value) || 0;
+      const max = Number(document.querySelector("#maxPrice").value) || Infinity;
+      const city = document.querySelector("#cityFilter").value.trim().toLowerCase();
+      const photosOnly = document.querySelector("#onlyPhoto").checked;
+      const sort = document.querySelector("#sortSelect").value;
+
+      let filtered = products.filter(p => {
+        if (favoritesOnly && !favorites.has(p.id)) return false;
+        if (category !== "Все объявления" && p.category !== category) return false;
+        if (p.price < min || p.price > max) return false;
+        if (city && !p.city.toLowerCase().includes(city)) return false;
+        if (photosOnly && !p.image) return false;
+        if (query && !p.title.toLowerCase().includes(query)) return false;
+        return true;
+      });
+
+      if (sort === "cheap") {
+        filtered.sort((a, b) => a.price - b.price);
+      } else if (sort === "expensive") {
+        filtered.sort((a, b) => b.price - a.price);
+      }
+
+      listings.innerHTML = "";
+      if (filtered.length === 0) {
+        listings.innerHTML = `<div class="empty">Ничего не найдено. Попробуйте изменить параметры поиска или фильтры.</div>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const isFav = favorites.has(p.id);
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="photo-wrap">
+            <img class="photo" src="${p.image}" alt="${p.title}" loading="lazy" />
+            <button class="favorite ${isFav ? 'selected' : ''}" data-id="${p.id}" aria-label="В избранное">
+              ${isFav ? '♥' : '♡'}
+            </button>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">${p.title}</h3>
+            <div class="price">${p.price.toLocaleString('ru-RU')} ₽</div>
+            <div class="meta">${p.city} • ${p.date}</div>
+          </div>
+        `;
+        listings.appendChild(card);
+      });
+    }
+
+    // Переключение категорий через кнопки
+    document.querySelectorAll(".category").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".category").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelector("#categoryFilter").value = btn.dataset.category;
+        render();
+      });
+    });
+
+    // Слушатели изменений фильтров
+    document.querySelector("#categoryFilter").addEventListener("change", render);
+    document.querySelector("#minPrice").addEventListener("input", render);
+    document.querySelector("#maxPrice").addEventListener("input", render);
+    document.querySelector("#cityFilter").addEventListener("input", render);
+    document.querySelector("#onlyPhoto").addEventListener("change", render);
+    document.querySelector("#sortSelect").addEventListener("change", render);
+    
+    // Поиск
+    document.querySelector("#searchForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      render();
+    });
+    searchInput.addEventListener("input", render);
+
+    // Фильтр избранного
+    document.querySelector("#favoritesFilter").addEventListener("click", () => {
+      favoritesOnly = !favoritesOnly;
+      document.querySelector("#favoritesFilter").textContent = favoritesOnly ? "✕ Сбросить" : "♡ Избранное";
+      render();
+    });
+
+    // Добавление/удаление из избранного (делегирование событий)
+    listings.addEventListener("click", (e) => {
+      if (e.target.classList.contains("favorite")) {
+        const id = Number(e.target.dataset.id);
+        if (favorites.has(id)) {
+          favorites.delete(id);
+        } else {
+          favorites.add(id);
+        }
+        render();
+      }
+    });
+
+    // Сброс фильтров
+    document.querySelector("#resetFilters").addEventListener("click", () => {
+      document.querySelector("#categoryFilter").value = "Все объявления";
+      document.querySelector("#minPrice").value = "";
+      document.querySelector("#maxPrice").value = "";
+      document.querySelector("#cityFilter").value = "Москва";
+      document.querySelector("#onlyPhoto").checked = false;
+      document.querySelector("#sortSelect").value = "default";
+      searchInput.value = "";
+      favoritesOnly = false;
+      document.querySelector("#favoritesFilter").textContent = "♡ Избранное";
+      document.querySelectorAll(".category").forEach(b => b.classList.remove("active"));
+      document.querySelector('.category[data-category="Все объявления"]').classList.add("active");
+      render();
+    });
+
+    // Модальное окно
+    const modalOverlay = document.querySelector("#modalOverlay");
+    
+    window.openListingModal = function() {
+      modalOverlay.classList.add("open");
+    };
+    
+    document.querySelector("#openModal").addEventListener("click", () => modalOverlay.classList.add("open"));
+    document.querySelector("#closeModal").addEventListener("click", () => modalOverlay.classList.remove("open"));
+    
+    modalOverlay.addEventListener("click", (e) => {
+      if (e.target === modalOverlay) modalOverlay.classList.remove("open");
+    });
+
+    // Добавление нового объявления
+    document.querySelector("#listingForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const newListing = {
+        id: Date.now(),
+        title: document.querySelector("#newTitle").value,
+        category: document.querySelector("#newCategory").value,
+        price: Number(document.querySelector("#newPrice").value),
+        city: document.querySelector("#newCity").value,
+        date: "Только что",
+        image: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&q=80"
+      };
+      products.unshift(newListing);
+      modalOverlay.classList.remove("open");
+      e.target.reset();
+      document.querySelector("#newCity").value = "Москва";
+      render();
+    });
+
+    // Первичная отрисовка
+    render();
+  </script>
+</body>
+</html>
